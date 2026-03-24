@@ -3,6 +3,7 @@
 A production-ready robust backend service to optimize the allocation of cargos into tanks, built with NestJS and TypeScript.
 
 **🚀 Live Demo:** [https://cargo-optimization-service.onrender.com](https://cargo-optimization-service.onrender.com)
+**🚀 Swagger URL:** [https://cargo-optimization-service.onrender.com/api](https://cargo-optimization-service.onrender.com/api)
 
 ## 1. Project Overview
 The Cargo Optimization Service evaluates a set of cargos and empty tanks, returning an optimized mapping that maximizes the total loaded cargo volume. It enforces the rule that each tank can only house cargo originating from a single cargo ID, while allowing cargo splitting (a specific cargo can span across multiple tanks).
