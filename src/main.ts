@@ -3,9 +3,37 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
+import { WinstonModule, utilities as nestWinstonUtilities } from 'nest-winston';
+import * as winston from 'winston';
+import { LoggingInterceptor } from './core/interceptors/logging.interceptor';
+import { json, urlencoded } from 'express';
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: WinstonModule.createLogger({
+      transports: [
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.ms(),
+            nestWinstonUtilities.format.nestLike('ShipIQ', {
+              colors: true,
+              prettyPrint: true,
+              processId: true,
+            }),
+          ),
+        }),
+      ],
+    }),
+  });
   
+  // Apply the global interceptor
+  app.useGlobalInterceptors(new LoggingInterceptor());
+
+  // Increase payload limit for large datasets
+  app.use(json({ limit: '10mb' }));
+  app.use(urlencoded({ extended: true, limit: '10mb' }));
+
   // Enable global validation using class-validator
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 

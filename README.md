@@ -97,3 +97,32 @@ Retrieves the computed allocations and the total volume of all cargos successful
 ## Swagger Documentation
 Once the server is running, the fully detailed interactive Swagger API documentation is available at:
 `http://localhost:3000/api`
+
+## 7. Interactive Visualization UI
+This project includes a fully integrated front-end visualization built with HTML, Tailwind CSS, and Vanilla JavaScript.
+
+To access the UI:
+1. Start the application (`npm run start:dev` or via Docker).
+2. Open your browser and navigate to `http://localhost:3000`. (The `public/index.html` is served automatically).
+3. You will see an interactive dashboard where you can tweak the JSON inputs for Cargos and Tanks.
+4. Click **Run Optimization Setup** to visualize how the system automatically allocates the cargoes into the tanks using the greedy algorithm, complete with visual fill-percentage indicators.
+
+## 8. Cloud Deployment (Render)
+This project is pre-configured for one-click deployment to **Render** using the included `render.yaml`.
+
+### To Deploy:
+1. Push this repository to **GitHub**.
+2. Log in to [Render.com](https://render.com).
+3. Click **New +** -> **Blueprint**.
+4. Connect your GitHub repository.
+5. Render will automatically detect the `render.yaml` and configure the service.
+6. Once deployed, you will get a live URL to access the API and UI.
+
+> [!TIP]
+> Make sure the `NODE_VERSION` in Render matches your local version (v20+ recommended).
+
+## 9. Performance & Large Datasets
+The service is optimized to handle larger datasets:
+- **Algorithmic Complexity**: The Greedy Allocation algorithm runs in **O(N log N)** time (due to sorting), where N is the number of cargos or tanks. This remains highly performant even for thousands of entries.
+- **Payload Limits**: The API is configured to accept payloads up to **10MB**, allowing for significant batches of cargo and tank data.
+- **Memory Efficiency**: The core algorithm uses in-place operations on cloned data structures to avoid deep-copy overhead where possible.

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShipIQ Cargo Optimization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tank-bar { transition: height 0.8s ease-in-out, background-color 0.8s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="max-w-7xl mx-auto p-8">
+        <header class="mb-10 text-center">
+            <h1 class="text-4xl font-bold text-blue-400 mb-2">ShipIQ Cargo Optimizer</h1>
+            <p class="text-gray-400">Real-time Visualization Dashboard</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Input Control Panel -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg lg:col-span-1">
+                <h2 class="text-2xl font-semibold mb-6 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    Input Data
+                </h2>
+                
+                <div class="mb-4">
+                    <label class="block text-sm text-gray-400 mb-2">Cargos JSON</label>
+                    <textarea id="cargos-input" class="w-full h-32 bg-gray-900 border border-gray-700 rounded p-3 text-sm font-mono focus:border-blue-500 focus:outline-none" spellcheck="false">[
+  { "id": "C1", "volume": 1234 },
+  { "id": "C2", "volume": 4352 },
+  { "id": "C3", "volume": 3321 },
+  { "id": "C4", "volume": 2456 },
+  { "id": "C5", "volume": 5123 },
+  { "id": "C6", "volume": 1879 },
+  { "id": "C7", "volume": 4987 },
+  { "id": "C8", "volume": 2050 },
+  { "id": "C9", "volume": 3678 },
+  { "id": "C10", "volume": 5432 }
+]</textarea>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm text-gray-400 mb-2">Tanks JSON</label>
+                    <textarea id="tanks-input" class="w-full h-32 bg-gray-900 border border-gray-700 rounded p-3 text-sm font-mono focus:border-blue-500 focus:outline-none" spellcheck="false">[
+  { "id": "T1", "capacity": 1234 },
+  { "id": "T2", "capacity": 4352 },
+  { "id": "T3", "capacity": 3321 },
+  { "id": "T4", "capacity": 2456 },
+  { "id": "T5", "capacity": 5123 },
+  { "id": "T6", "capacity": 1879 },
+  { "id": "T7", "capacity": 4987 },
+  { "id": "T8", "capacity": 2050 },
+  { "id": "T9", "capacity": 3678 },
+  { "id": "T10", "capacity": 5432 }
+]</textarea>
+                </div>
+
+                <button id="optimize-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-4 rounded transition shadow-lg shadow-blue-500/30">
+                    Run Optimization Setup
+                </button>
+                <div id="status-msg" class="mt-4 text-sm text-center font-medium h-6"></div>
+            </div>
+
+            <!-- Visualization Panel -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg lg:col-span-2 flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c-1.105 0-2-.895-2-2m2 2c1.105 0 2-.895 2-2m-2 2V5n-2 1h16M4 14c-1.105 0-2-.895-2-2s.895-2 2-2s2 .895 2 2m-2-2V4n12 10c0 1.105-.895 2-2 2s-2-.895-2-2"></path></svg>
+                        Tank Capacity Allocation
+                    </h2>
+                    <div class="text-right">
+                        <div class="text-xs text-gray-400 uppercase tracking-wider">Total Loaded</div>
+                        <div id="total-loaded" class="text-3xl font-bold text-green-400">0</div>
+                    </div>
+                </div>
+
+                <div id="tanks-container" class="flex-1 grid grid-cols-2 md:grid-cols-5 gap-4 overflow-y-auto pr-2 pb-4">
+                    <!-- Tanks will render here -->
+                    <div class="flex items-center justify-center w-full h-full text-gray-500 italic">
+                        Click 'Run Optimization Setup' to visualize...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cargosInput = document.getElementById('cargos-input');
+        const tanksInput = document.getElementById('tanks-input');
+        const optimizeBtn = document.getElementById('optimize-btn');
+        const statusMsg = document.getElementById('status-msg');
+        const tanksContainer = document.getElementById('tanks-container');
+        const totalLoadedTxt = document.getElementById('total-loaded');
+
+        // Color palette for different cargos to make visualization pretty
+        const colors = [
+            'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 
+            'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500',
+            'bg-orange-500', 'bg-cyan-500'
+        ];
+
+        // Hash function to pick consistent color based on string ID
+        const getColorFromId = (id) => {
+            let hash = 0;
+            for(let i = 0; i < id.length; i++) hash += id.charCodeAt(i);
+            return colors[hash % colors.length];
+        };
+
+        optimizeBtn.addEventListener('click', async () => {
+            optimizeBtn.disabled = true;
+            optimizeBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            statusMsg.textContent = 'Uploading data...';
+            statusMsg.className = 'mt-4 text-sm text-center font-medium h-6 text-yellow-400';
+
+            try {
+                const cargos = JSON.parse(cargosInput.value);
+                const tanks = JSON.parse(tanksInput.value);
+
+                // 1. Post Input
+                let res = await fetch('/input', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cargos, tanks })
+                });
+                
+                if (!res.ok) throw new Error('Failed to load input data');
+                statusMsg.textContent = 'Optimizing...';
+
+                // 2. Trigger Optimize
+                res = await fetch('/optimize', { method: 'POST' });
+                if (!res.ok) throw new Error('Failed to run optimization');
+
+                statusMsg.textContent = 'Fetching Results...';
+
+                // 3. Get Results
+                res = await fetch('/results');
+                if (!res.ok) throw new Error('Failed to fetch results');
+                
+                const data = await res.json();
+                totalLoadedTxt.textContent = data.totalLoaded.toLocaleString();
+                
+                // Draw Visualization
+                renderTanks(tanks, data.allocations);
+
+                statusMsg.textContent = 'Optimization Complete! 🎉';
+                statusMsg.className = 'mt-4 text-sm text-center font-medium h-6 text-green-400';
+
+            } catch (err) {
+                statusMsg.textContent = `Error: ${err.message}`;
+                statusMsg.className = 'mt-4 text-sm text-center font-medium h-6 text-red-500';
+            } finally {
+                optimizeBtn.disabled = false;
+                optimizeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+
+        function renderTanks(originalTanks, allocations) {
+            tanksContainer.innerHTML = '';
+            
+            // Map allocations by tankId
+            const allocMap = {};
+            allocations.forEach(a => {
+                if (!allocMap[a.tankId]) allocMap[a.tankId] = [];
+                allocMap[a.tankId].push(a);
+            });
+
+            originalTanks.forEach(tank => {
+                const tankAllocs = allocMap[tank.id] || [];
+                const totalAllocVolume = tankAllocs.reduce((sum, a) => sum + a.allocatedVolume, 0);
+                const fillPercent = Math.min(100, Math.round((totalAllocVolume / tank.capacity) * 100));
+                
+                // If it has cargo, get color of first cargo (rule: single cargo ID per tank)
+                const cargoColor = tankAllocs.length > 0 ? getColorFromId(tankAllocs[0].cargoId) : 'bg-transparent';
+                const cargoLabel = tankAllocs.length > 0 ? tankAllocs[0].cargoId : 'Empty';
+
+                const html = `
+                    <div class="bg-gray-900 border border-gray-700 rounded-lg p-3 flex flex-col items-center">
+                        <div class="text-sm font-bold text-gray-300 mb-1">${tank.id}</div>
+                        <div class="text-xs text-gray-500 mb-3">${tank.capacity.toLocaleString()} cap</div>
+                        
+                        <!-- The visual glass tank -->
+                        <div class="relative w-16 h-32 bg-gray-800 rounded-b-md border-x-2 border-b-2 border-gray-600 overflow-hidden flex items-end">
+                            <div class="w-full ${cargoColor} tank-bar opacity-80" style="height: ${fillPercent}%"></div>
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <span class="text-xs font-bold text-white drop-shadow-md z-10">${fillPercent}%</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 text-xs font-semibold px-2 py-1 rounded bg-gray-800 border border-gray-700">
+                            Cargo: <span class="${tankAllocs.length > 0 ? 'text-white' : 'text-gray-500'}">${cargoLabel}</span>
+                        </div>
+                    </div>
+                `;
+                
+                tanksContainer.insertAdjacentHTML('beforeend', html);
+            });
+        }
+    </script>
+</body>
+</html>
